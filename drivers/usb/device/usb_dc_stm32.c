@@ -437,7 +437,11 @@ static int usb_dc_stm32_init(void)
 	}
 #else /* USB_OTG_FS */
 	/* TODO: make this dynamic (depending usage) */
+#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32_otghs) // USBOTG_HS
+	HAL_PCDEx_SetRxFiFo(&usb_dc_stm32_state.pcd, 0x200);
+#else // USBOTG_FS
 	HAL_PCDEx_SetRxFiFo(&usb_dc_stm32_state.pcd, FIFO_EP_WORDS);
+#endif
 	for (i = 0U; i < USB_NUM_BIDIR_ENDPOINTS; i++) {
 		HAL_PCDEx_SetTxFiFo(&usb_dc_stm32_state.pcd, i,
 				    FIFO_EP_WORDS);

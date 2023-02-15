@@ -1,0 +1,11 @@
+&usbotg_fs {
+    status = "disabled";
+};
+
+&usbotg_hs {
+    clocks = <&rcc STM32_CLOCK_BUS_AHB1 0x20000000>,
+        <&rcc STM32_SRC_PLL_Q CK48M_SEL(0)>;
+    pinctrl-0 = <&usb_otg_hs_dm_pb14 &usb_otg_hs_dp_pb15>;
+    pinctrl-names = "default";
+    status = "ok";
+};
