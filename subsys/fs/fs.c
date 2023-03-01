@@ -728,8 +728,10 @@ int fs_mkfs(int fs_type, uintptr_t dev_id, void *cfg, int flags)
 	int rc = -EINVAL;
 	const struct fs_file_system_t *fs;
 
+	LOG_INF("Wait for mkfs mutex");
 	k_mutex_lock(&mutex, K_FOREVER);
 
+	LOG_INF("got mutex");
 	/* Get file system information */
 	fs = fs_type_get(fs_type);
 	if (fs == NULL) {
@@ -744,6 +746,7 @@ int fs_mkfs(int fs_type, uintptr_t dev_id, void *cfg, int flags)
 		rc = -ENOTSUP;
 		goto mount_err;
 	}
+	LOG_INF("Start to mkfs");
 
 	rc = fs->mkfs(dev_id, cfg, flags);
 	if (rc < 0) {

@@ -857,6 +857,7 @@ static int littlefs_mount(struct fs_mount_t *mountp)
 	    (mountp->flags & FS_MOUNT_FLAG_NO_FORMAT) == 0) {
 		LOG_WRN("can't mount (LFS %d); formatting", ret);
 		if ((mountp->flags & FS_MOUNT_FLAG_READ_ONLY) == 0) {
+			LOG_INF("Start to format new partition with little fs");
 			ret = lfs_format(&fs->lfs, &fs->cfg);
 			if (ret < 0) {
 				LOG_ERR("format failed (LFS %d)", ret);
@@ -868,7 +869,8 @@ static int littlefs_mount(struct fs_mount_t *mountp)
 			ret = -EROFS;
 			goto out;
 		}
-
+		
+		LOG_INF("Start to retry mounting new partition with little fs");
 		ret = lfs_mount(&fs->lfs, &fs->cfg);
 		if (ret < 0) {
 			LOG_ERR("remount after format failed (LFS %d)", ret);
