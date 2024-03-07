@@ -64,7 +64,7 @@ void pm_state_set(enum pm_state state, uint8_t substate_id)
 
 		/* ensure HSI is the wake-up system clock */
 		LL_RCC_SetClkAfterWakeFromStop(LL_RCC_STOP_WAKEUPCLOCK_HSI);
-
+		
 		switch (substate_id) {
 		case 1:
 			/* enter STOP0 mode */

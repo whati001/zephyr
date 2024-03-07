@@ -7,3 +7,7 @@
 &stm32_lp_tick_source {
 	st,prescaler = <32>;
 };
+
+&usart1 {
+  status = "disabled";
+};
