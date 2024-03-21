@@ -6,9 +6,6 @@
 
 if BOARD_CONNECTKIT_NRF52840
 
-config BOARD
-    default "connectkit_nrf52840"
-
 config BT_CTLR
     default BT
 
