@@ -1,0 +1,24 @@
+#
+# Copyright (c) 2016-2023 Makerdiary
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+if BOARD_CONNECTKIT_NRF52840
+
+config BOARD
+    default "connectkit_nrf52840"
+
+config BT_CTLR
+    default BT
+
+if LOG
+
+# Logger cannot use itself to log
+choice USB_CDC_ACM_LOG_LEVEL_CHOICE
+	default USB_CDC_ACM_LOG_LEVEL_OFF
+endchoice
+
+endif # LOG
+
+endif # BOARD_CONNECTKIT_NRF52840
