@@ -1,0 +1,41 @@
+/ {
+    /* These aliases are provided for compatibility with samples */
+    aliases {
+        sw0 = &button0;
+        led0 = &led0_green;
+        led1 = &led1_red;
+        led2 = &led1_green;
+        led3 = &led1_blue;
+        led0-green = &led0_green;
+        led1-red = &led1_red;
+        led1-green = &led1_green;
+        led1-blue = &led1_blue;
+        pwm-led0 = &red_pwm_led;
+        pwm-led1 = &green_pwm_led;
+        pwm-led2 = &blue_pwm_led;
+        red-pwm-led = &red_pwm_led;
+        green-pwm-led = &green_pwm_led;
+        blue-pwm-led = &blue_pwm_led;
+        mcuboot-button0 = &button0;
+        mcuboot-led0 = &led0_green;
+        watchdog0 = &wdt0;
+    };
+
+    /*
+    nrf_radio_fem: fem {
+        compatible = "generic-fem-two-ctrl-pins";
+        ctx-gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;
+        ctx-settle-time-us = <1>;
+        crx-gpios = <&gpio0 22 GPIO_ACTIVE_HIGH>;
+        crx-settle-time-us = <1>;
+        rx-gain-db = <12>;
+        tx-gain-db = <25>;
+    };
+    */
+};
+
+/*
+&radio {
+    fem = <&nrf_radio_fem>;
+};
+*/

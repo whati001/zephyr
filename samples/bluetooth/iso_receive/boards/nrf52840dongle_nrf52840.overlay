@@ -1,0 +1,5 @@
+
+// overwrite led0 to light up red led instead of pcb led
+&led0_green {
+    gpios = < &gpio1 10 GPIO_ACTIVE_HIGH >;
+};
