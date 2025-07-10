@@ -21,7 +21,8 @@
 };
 
 &cpu0 {
-	cpu-power-states = <&stop0 &stop1 &stop2>;// &stop3>;
+	// cpu-power-states = <&stop0 &stop1 &stop2>;
+	cpu-power-states = <&stop0 &stop1 &stop2 &stop3>; // Enable stop3 state
 };
 
 &rtc {

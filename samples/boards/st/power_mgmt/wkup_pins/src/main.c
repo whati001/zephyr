@@ -12,7 +12,8 @@
 #include <zephyr/sys/poweroff.h>
 #include <zephyr/dt-bindings/gpio/stm32-gpio.h>
 
-#define WAIT_TIME_US 4000000
+#include <zephyr/logging/log.h>
+LOG_MODULE_REGISTER(wkup_pins, LOG_LEVEL_INF);
 
 #define WKUP_SRC_NODE DT_ALIAS(wkup_src)
 #if !DT_NODE_HAS_STATUS_OKAY(WKUP_SRC_NODE)
@@ -23,9 +24,16 @@ static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET(WKUP_SRC_NODE, gpios)
 
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
 
+static struct gpio_callback gpio_cb;
+static void wkup_pin_isr(const struct device *unused1, struct gpio_callback *unused2,
+			 uint32_t unused3)
+{
+	LOG_INF("WAKE-UP button pressed");
+}
+
 int main(void)
 {
-	printk("\nWake-up button is connected to %s pin %d\n", button.port->name, button.pin);
+	LOG_INF("Wake-up button is connected to %s pin %d", button.port->name, button.pin);
 
 	__ASSERT_NO_MSG(gpio_is_ready_dt(&led));
 	gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
@@ -34,13 +42,23 @@ int main(void)
 	/* Setup button GPIO pin as a source for exiting Poweroff */
 	gpio_pin_configure_dt(&button, STM32_GPIO_WKUP);
 
-	printk("Will wait %ds before powering the system off\n", (WAIT_TIME_US / 1000000));
-	k_busy_wait(WAIT_TIME_US);
+	// enable interrupt on button press
+	gpio_init_callback(&gpio_cb, wkup_pin_isr, BIT(button.pin));
+	int err = gpio_add_callback(button.port, &gpio_cb);
+	if (err) {
+		return err;
+	}
 
-	printk("Powering off\n");
-	printk("Press the user button to power the system on\n\n");
+	gpio_pin_interrupt_configure_dt(&button, GPIO_INT_EDGE_TO_ACTIVE);
 
-	sys_poweroff();
+	LOG_INF("Powering off");
+	LOG_INF("Press the user button to power the system on");
+
+	// sys_poweroff();
+	while (1) {
+		k_sleep(K_SECONDS(4));
+		LOG_INF("System is powered off, waiting for wake-up button press...");
+	}
 	/* Will remain powered off until wake-up or reset button is pressed */
 
 	return 0;
