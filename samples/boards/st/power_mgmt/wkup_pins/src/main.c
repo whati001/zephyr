@@ -23,6 +23,16 @@ static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET(WKUP_SRC_NODE, gpios)
 
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
 
+// Struct for holding GPIO-related callback functions
+static struct gpio_callback btn_cb_data;
+
+// GPIO callback (ISR)
+void button_isr(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+	// Add work to the workqueue
+	printk("Button pressed, system waking up\n");
+}
+
 int main(void)
 {
 	printk("\nWake-up button is connected to %s pin %d\n", button.port->name, button.pin);
@@ -34,14 +44,25 @@ int main(void)
 	/* Setup button GPIO pin as a source for exiting Poweroff */
 	gpio_pin_configure_dt(&button, STM32_GPIO_WKUP);
 
-	printk("Will wait %ds before powering the system off\n", (WAIT_TIME_US / 1000000));
-	k_busy_wait(WAIT_TIME_US);
 
-	printk("Powering off\n");
-	printk("Press the user button to power the system on\n\n");
+	printk("Press the user button to power the system from stop3\n\n");
 
-	sys_poweroff();
-	/* Will remain powered off until wake-up or reset button is pressed */
+	// Configure the interrupt
+	int ret = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_EDGE_TO_ACTIVE);
+	if (ret < 0) {
+		printk("ERROR: could not configure button as interrupt source\r\n");
+		return 0;
+	}
+
+	// Connect callback function (ISR) to interrupt source
+	gpio_init_callback(&btn_cb_data, button_isr, BIT(button.pin));
+	gpio_add_callback(button.port, &btn_cb_data);
+
+	// Do nothing
+	while (1) {
+		k_sleep(K_SECONDS(10));
+		printk("System woke up from stop3 mode via RTC irq\n");
+	}
 
 	return 0;
 }
