@@ -44,7 +44,6 @@ int main(void)
 	/* Setup button GPIO pin as a source for exiting Poweroff */
 	gpio_pin_configure_dt(&button, STM32_GPIO_WKUP);
 
-
 	printk("Press the user button to power the system from stop3\n\n");
 
 	// Configure the interrupt
@@ -61,7 +60,7 @@ int main(void)
 	// Do nothing
 	while (1) {
 		k_sleep(K_SECONDS(10));
-		printk("System woke up from stop3 mode via RTC irq\n");
+		printk("System woke up from stop3 mode via RTC irq\n\n\n\n\n\n\n");
 	}
 
 	return 0;
