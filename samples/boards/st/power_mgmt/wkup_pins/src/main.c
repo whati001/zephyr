@@ -14,6 +14,10 @@
 
 #define WAIT_TIME_US 4000000
 
+#define MAIN_LOG_LEVEL CONFIG_LOG_DEFAULT_LEVEL
+#include <zephyr/logging/log.h>
+LOG_MODULE_REGISTER(wkup_pins);
+
 #define WKUP_SRC_NODE DT_ALIAS(wkup_src)
 #if !DT_NODE_HAS_STATUS_OKAY(WKUP_SRC_NODE)
 #error "Unsupported board: wkup_src devicetree alias is not defined"
@@ -30,12 +34,12 @@ static struct gpio_callback btn_cb_data;
 void button_isr(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
 	// Add work to the workqueue
-	printk("Button pressed, system waking up\n");
+	LOG_INF("Button pressed, system waking up\n");
 }
 
 int main(void)
 {
-	printk("\nWake-up button is connected to %s pin %d\n", button.port->name, button.pin);
+	LOG_INF("\nWake-up button is connected to %s pin %d\n", button.port->name, button.pin);
 
 	__ASSERT_NO_MSG(gpio_is_ready_dt(&led));
 	gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
@@ -44,12 +48,12 @@ int main(void)
 	/* Setup button GPIO pin as a source for exiting Poweroff */
 	gpio_pin_configure_dt(&button, STM32_GPIO_WKUP);
 
-	printk("Press the user button to power the system from stop3\n\n");
+	LOG_INF("Press the user button to power the system from stop3\n\n");
 
 	// Configure the interrupt
 	int ret = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_EDGE_TO_ACTIVE);
 	if (ret < 0) {
-		printk("ERROR: could not configure button as interrupt source\r\n");
+		LOG_ERR("ERROR: could not configure button as interrupt source\r\n");
 		return 0;
 	}
 
@@ -59,8 +63,8 @@ int main(void)
 
 	// Do nothing
 	while (1) {
-		k_sleep(K_SECONDS(10));
-		printk("System woke up from stop3 mode via RTC irq\n\n\n\n\n\n\n");
+		k_sleep(K_SECONDS(5));
+		LOG_INF("System woke up from stop3 mode via RTC irq\n\n\n\n\n\n\n");
 	}
 
 	return 0;
