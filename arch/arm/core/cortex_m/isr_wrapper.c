@@ -76,6 +76,8 @@ void _isr_wrapper(void)
 	 */
 	irq_number -= 16;
 
+	printk("ISR wrapper called for IRQ %d\n", irq_number);
+	
 	const struct _isr_table_entry *entry = &_sw_isr_table[irq_number];
 	(entry->isr)(entry->arg);
 
