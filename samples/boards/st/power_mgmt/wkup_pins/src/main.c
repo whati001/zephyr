@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "stm32u5xx_ll_pwr.h"
+#include "zephyr/dt-bindings/gpio/gpio.h"
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
@@ -35,6 +37,9 @@ void button_isr(const struct device *dev, struct gpio_callback *cb, uint32_t pin
 {
 	// Add work to the workqueue
 	LOG_INF("Button pressed, system waking up\n");
+
+	// clear APC flag to disable pull-up/down
+	LL_PWR_DisablePUPDConfig();
 }
 
 int main(void)
@@ -46,7 +51,7 @@ int main(void)
 	gpio_pin_set(led.port, led.pin, 1);
 
 	/* Setup button GPIO pin as a source for exiting Poweroff */
-	gpio_pin_configure_dt(&button, STM32_GPIO_WKUP);
+	gpio_pin_configure_dt(&button, (STM32_GPIO_WKUP | GPIO_PULL_DOWN));
 
 	LOG_INF("Press the user button to power the system from stop3\n\n");
 
