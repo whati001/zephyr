@@ -34,6 +34,9 @@ static void pwr_stop3_isr(const struct device *dev)
 
 	/* Clear all wake-up flags */
 	LL_PWR_ClearFlag_WU();
+
+	// clear APC flag to disable pull-up/down
+	LL_PWR_DisablePUPDConfig();
 }
 #endif
 
@@ -65,6 +68,9 @@ void set_mode_stop(uint8_t substate_id)
 		/* Clear flags */
 		LL_PWR_ClearFlag_SB();
 		LL_PWR_ClearFlag_WU();
+
+		/* Enable PUPD configuration */
+		 LL_PWR_EnablePUPDConfig(); 
 
 		sys_cache_instr_disable();
 
