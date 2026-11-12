@@ -2290,6 +2290,9 @@ static int spi_stm32_pm_action(const struct device *dev, enum pm_device_action a
 		if (err < 0) {
 			return err;
 		}
+
+		/* STOP modes may discard the peripheral configuration. */
+		data->ctx.config = NULL;
 		break;
 	case PM_DEVICE_ACTION_SUSPEND:
 		/* Stop device clock. */
