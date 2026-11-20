@@ -94,6 +94,62 @@ void i2c_stm32_error_isr(void *arg)
 	(void)i2c_stm32_error(dev);
 }
 #endif
+static int i2c_stm32_get_clock_rate(const struct device *dev, uint32_t *rate)
+{
+	const struct i2c_stm32_config *cfg = dev->config;
+	const struct device *clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
+	size_t clock_index = cfg->pclk_len > 1 ? 1 : 0;
+
+	if (clock_control_get_rate(clk, (clock_control_subsys_t)&cfg->pclken[clock_index],
+				   rate) < 0) {
+		LOG_ERR("Failed call clock_control_get_rate(pclken[%u])", (unsigned int)clock_index);
+		return -EIO;
+	}
+
+	return 0;
+}
+
+#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32_i2c_v2) && !defined(CONFIG_I2C_RTIO)
+static int i2c_stm32_restore_after_context_loss(const struct device *dev)
+{
+	const struct i2c_stm32_config *cfg = dev->config;
+	struct i2c_stm32_data *data = dev->data;
+	uint32_t i2c_clock;
+	int ret;
+
+	if (!data->is_configured) {
+		return 0;
+	}
+
+	ret = i2c_stm32_get_clock_rate(dev, &i2c_clock);
+	if (ret < 0) {
+		return ret;
+	}
+
+	if ((data->current_timing.periph_clock == i2c_clock) &&
+	    (cfg->i2c->TIMINGR == data->current_timing.timing_setting)) {
+		return 0;
+	}
+
+	LOG_DBG("Restoring I2C configuration after peripheral context loss");
+	LL_I2C_Disable(cfg->i2c);
+
+#if defined(I2C_CR1_SMBUS) || defined(I2C_CR1_SMBDEN) || defined(I2C_CR1_SMBHEN)
+	i2c_stm32_set_smbus_mode(dev, data->mode);
+#endif
+
+	ret = i2c_stm32_configure_timing(dev, i2c_clock);
+	if (ret < 0) {
+		return ret;
+	}
+
+	if (data->smbalert_active) {
+		LL_I2C_Enable(cfg->i2c);
+	}
+
+	return 0;
+}
+#endif
 
 int i2c_stm32_activate(const struct device *dev)
 {
@@ -109,11 +165,19 @@ int i2c_stm32_activate(const struct device *dev)
 	}
 
 	/* Enable device clock. */
-	if (clock_control_on(clk,
-			     (clock_control_subsys_t) &cfg->pclken[0]) != 0) {
+	ret = clock_control_on(clk, (clock_control_subsys_t)&cfg->pclken[0]);
+	if (ret < 0) {
 		LOG_ERR("i2c: failure enabling clock");
 		return -EIO;
 	}
+
+#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32_i2c_v2) && !defined(CONFIG_I2C_RTIO)
+	ret = i2c_stm32_restore_after_context_loss(dev);
+	if (ret < 0) {
+		(void)clock_control_off(clk, (clock_control_subsys_t)&cfg->pclken[0]);
+		return ret;
+	}
+#endif
 
 	return 0;
 }
@@ -197,18 +261,9 @@ int i2c_stm32_runtime_configure(const struct device *dev, uint32_t config)
 	uint32_t i2c_clock = 0U;
 	int ret;
 
-	if (cfg->pclk_len > 1) {
-		if (clock_control_get_rate(clk, (clock_control_subsys_t)&cfg->pclken[1],
-					   &i2c_clock) < 0) {
-			LOG_ERR("Failed call clock_control_get_rate(pclken[1])");
-			return -EIO;
-		}
-	} else {
-		if (clock_control_get_rate(clk, (clock_control_subsys_t)&cfg->pclken[0],
-					   &i2c_clock) < 0) {
-			LOG_ERR("Failed call clock_control_get_rate(pclken[0])");
-			return -EIO;
-		}
+	ret = i2c_stm32_get_clock_rate(dev, &i2c_clock);
+	if (ret < 0) {
+		return ret;
 	}
 
 	data->dev_config = config;

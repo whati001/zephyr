@@ -1507,6 +1507,7 @@ int i2c_stm32_configure_timing(const struct device *dev, uint32_t clock)
 	uint32_t i2c_h_min_time, i2c_l_min_time;
 	uint32_t presc = 1U;
 	uint32_t timing = 0U;
+	uint32_t i2c_freq;
 
 	/* Look for an adequate preset timing value */
 	for (uint32_t i = 0; i < cfg->n_timings; i++) {
@@ -1516,6 +1517,7 @@ int i2c_stm32_configure_timing(const struct device *dev, uint32_t clock)
 		if ((I2C_SPEED_GET(speed) == I2C_SPEED_GET(data->dev_config)) &&
 		    (preset->periph_clock == clock)) {
 			/* Found a matching periph clock and i2c speed */
+			data->current_timing = *preset;
 			LL_I2C_SetTiming(i2c, preset->timing_setting);
 			return 0;
 		}
@@ -1525,11 +1527,13 @@ int i2c_stm32_configure_timing(const struct device *dev, uint32_t clock)
 	switch (I2C_SPEED_GET(data->dev_config)) {
 	case I2C_SPEED_STANDARD:
 		i2c_h_min_time = 4000U;
+		i2c_freq = I2C_BITRATE_STANDARD;
 		i2c_l_min_time = 4700U;
 		i2c_hold_time_min = 500U;
 		i2c_setup_time_min = 1250U;
 		break;
 	case I2C_SPEED_FAST:
+		i2c_freq = I2C_BITRATE_FAST;
 		i2c_h_min_time = 600U;
 		i2c_l_min_time = 1300U;
 		i2c_hold_time_min = 375U;
@@ -1572,6 +1576,10 @@ int i2c_stm32_configure_timing(const struct device *dev, uint32_t clock)
 	}
 
 	LOG_DBG("I2C TIMING = 0x%x", timing);
+	data->current_timing.periph_clock = clock;
+	data->current_timing.i2c_speed = i2c_freq;
+	data->current_timing.timing_setting = timing;
+
 	LL_I2C_SetTiming(i2c, timing);
 
 	return 0;
