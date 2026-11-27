@@ -252,6 +252,9 @@ int i2c_stm32_runtime_configure(const struct device *dev, uint32_t config)
 	const struct device *clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
 	I2C_TypeDef *i2c = cfg->i2c;
 	uint32_t i2c_clock = 0U;
+#ifdef CONFIG_PM_DEVICE_RUNTIME
+	int clock_err;
+#endif
 	int ret;
 
 	if (cfg->pclk_len > 1) {
@@ -288,7 +291,7 @@ int i2c_stm32_runtime_configure(const struct device *dev, uint32_t config)
 
 	ret = i2c_stm32_configure_timing(dev, i2c_clock);
 	if (ret < 0) {
-		return ret;
+		goto out;
 	}
 
 #ifndef CONFIG_I2C_RTIO
@@ -297,15 +300,18 @@ int i2c_stm32_runtime_configure(const struct device *dev, uint32_t config)
 	}
 #endif /* CONFIG_I2C_RTIO */
 
+out:
 #ifdef CONFIG_PM_DEVICE_RUNTIME
-	ret = clock_control_off(clk, (clock_control_subsys_t)&cfg->pclken[0]);
-	if (ret < 0) {
+	clock_err = clock_control_off(clk, (clock_control_subsys_t)&cfg->pclken[0]);
+	if (clock_err < 0) {
 		LOG_ERR("failure disabling I2C clock");
-		return ret;
+		if (ret == 0) {
+			ret = clock_err;
+		}
 	}
 #endif
 
-	return 0;
+	return ret;
 }
 
 #ifdef CONFIG_I2C_STM32_BUS_RECOVERY
