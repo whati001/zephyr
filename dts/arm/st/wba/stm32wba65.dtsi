@@ -101,6 +101,7 @@
 			interrupts = <73 0>, <74 0>;
 			interrupt-names = "event", "error";
 			status = "disabled";
+			power-domains = <&core_domain>;
 		};
 
 		i2c4: i2c@40008400 {
@@ -113,6 +114,7 @@
 			interrupts = <77 0>, <78 0>;
 			interrupt-names = "event", "error";
 			status = "disabled";
+			power-domains = <&core_domain>;
 		};
 
 		pinctrl: pin-controller@42020000 {
@@ -183,5 +185,13 @@
 };
 
 &spi3 {
+	power-domains = <&core_domain>;
+};
+
+&i2c1 {
+	power-domains = <&core_domain>;
+};
+
+&i2c3 {
 	power-domains = <&core_domain>;
 };

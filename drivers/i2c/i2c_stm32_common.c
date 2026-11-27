@@ -144,6 +144,57 @@ int i2c_stm32_suspend(const struct device *dev)
 	return 0;
 }
 
+static int i2c_stm32_restore_config(const struct device *dev)
+{
+	struct i2c_stm32_data *data = dev->data;
+#ifndef CONFIG_PM_DEVICE_RUNTIME
+	const struct i2c_stm32_config *cfg = dev->config;
+	const struct device *const clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
+	int clock_err;
+#endif
+	int err;
+
+	if (!IS_ENABLED(CONFIG_SOC_STM32WBA65XX)) {
+		return 0;
+	}
+
+#ifndef CONFIG_I2C_RTIO
+	if (!data->is_configured) {
+		return 0;
+	}
+
+	k_sem_take(&data->bus_mutex, K_FOREVER);
+#endif
+
+#ifndef CONFIG_PM_DEVICE_RUNTIME
+	err = clock_control_on(clk, (clock_control_subsys_t)&cfg->pclken[0]);
+	if (err < 0) {
+		LOG_ERR("failure enabling I2C clock");
+#ifndef CONFIG_I2C_RTIO
+		k_sem_give(&data->bus_mutex);
+#endif
+		return err;
+	}
+#endif
+
+	err = i2c_stm32_runtime_configure(dev, data->dev_config);
+
+#ifndef CONFIG_PM_DEVICE_RUNTIME
+	clock_err = clock_control_off(clk, (clock_control_subsys_t)&cfg->pclken[0]);
+	if (clock_err < 0) {
+		LOG_ERR("failure disabling I2C clock");
+		if (err == 0) {
+			err = clock_err;
+		}
+	}
+#endif
+
+#ifndef CONFIG_I2C_RTIO
+	k_sem_give(&data->bus_mutex);
+#endif
+	return err;
+}
+
 int i2c_stm32_pm_action(const struct device *dev, enum pm_device_action action)
 {
 	int err;
@@ -154,6 +205,12 @@ int i2c_stm32_pm_action(const struct device *dev, enum pm_device_action action)
 		break;
 	case PM_DEVICE_ACTION_SUSPEND:
 		err = i2c_stm32_suspend(dev);
+		break;
+	case PM_DEVICE_ACTION_TURN_ON:
+		err = i2c_stm32_restore_config(dev);
+		break;
+	case PM_DEVICE_ACTION_TURN_OFF:
+		err = 0;
 		break;
 	default:
 		return -ENOTSUP;
